@@ -66,20 +66,24 @@ void LiquidCrystal::init(uint8_t fourbitmode, uint8_t rs, uint8_t rw, uint8_t en
   _data_pins[5] = d5;
   _data_pins[6] = d6;
   _data_pins[7] = d7; 
-
+  
+/* Defer these operations to the begin() call, because pinMode() is not available to global constructors
   pinMode(_rs_pin, OUTPUT);
   // we can save 1 pin by not using RW. Indicate by passing 255 instead of pin#
   if (_rw_pin != 255) { 
     pinMode(_rw_pin, OUTPUT);
   }
   pinMode(_enable_pin, OUTPUT);
+*/
   
   if (fourbitmode)
     _displayfunction = LCD_4BITMODE | LCD_1LINE | LCD_5x8DOTS;
   else 
     _displayfunction = LCD_8BITMODE | LCD_1LINE | LCD_5x8DOTS;
-  
-  begin(16, 1);  
+
+/* No need to call begin from constructor -- it won't work for global objects in Galileo anyway
+  begin(16, 1);
+*/
 }
 
 void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
@@ -93,6 +97,18 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   if ((dotsize != 0) && (lines == 1)) {
     _displayfunction |= LCD_5x10DOTS;
   }
+
+  // Deferred initialized from init()
+  pinMode(_rs_pin, OUTPUT);
+  // we can save 1 pin by not using RW. Indicate by passing 255 instead of pin#
+  if (_rw_pin != 255) { 
+    pinMode(_rw_pin, OUTPUT);
+  }
+  pinMode(_enable_pin, OUTPUT);
+  
+  // Do these once, instead of every time a character is drawn for speed reasons.
+  for (int i=0; i<((_displayfunction & LCD_8BITMODE) ? 8 : 4); ++i)
+    pinMode(_data_pins[i], OUTPUT);
 
   // SEE PAGE 45/46 FOR INITIALIZATION SPECIFICATION!
   // according to datasheet, we need at least 40ms after power rises above 2.7V
@@ -293,7 +309,9 @@ void LiquidCrystal::pulseEnable(void) {
 
 void LiquidCrystal::write4bits(uint8_t value) {
   for (int i = 0; i < 4; i++) {
+/* No need to set pinMode every time a character is drawn
     pinMode(_data_pins[i], OUTPUT);
+*/
     digitalWrite(_data_pins[i], (value >> i) & 0x01);
   }
 
@@ -302,8 +320,10 @@ void LiquidCrystal::write4bits(uint8_t value) {
 
 void LiquidCrystal::write8bits(uint8_t value) {
   for (int i = 0; i < 8; i++) {
+/* No need to set pinMode every time a character is drawn
     pinMode(_data_pins[i], OUTPUT);
-    digitalWrite(_data_pins[i], (value >> i) & 0x01);
+*/
+	 digitalWrite(_data_pins[i], (value >> i) & 0x01);
   }
   
   pulseEnable();
